@@ -1,0 +1,19 @@
+; top-most EditorConfig file
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+insert_final_newline = true
+max_line_length = 120
+
+[*.java]
+indent_size = 4
+ij_java_imports_layout = *, |, javax.**, java.**, |, com.goodt.**, me.goodt.**, ru.abcconsulting.**, |, $*
+ij_java_class_count_to_use_import_on_demand = 99
+ij_java_names_count_to_use_import_on_demand = 99
+
+[*.sql]
+ij_sql_keyword_case = 2
+max_line_length = 500
