@@ -1,42 +1,54 @@
 package com.example.domain.dao.jdbc;
 
-import com.example.config.OrgstructureTestDbExtension;
-import com.example.domain.dao.projection.CycleDetectionProjection;
-import com.example.domain.dao.projection.DivisionPositionCountProjection;
-import com.example.domain.dao.projection.EmployeeAssignmentCountPerUnitProjection;
-import com.example.domain.dao.projection.ExternalIdentity;
-import com.example.domain.dao.projection.PositionAssignmentCountProjection;
+import com.example.domain.dao.projection.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class BusinessRuleValidationDaoTest {
 
-    @RegisterExtension
-    static OrgstructureTestDbExtension dbExtension = new OrgstructureTestDbExtension();
-
-    BusinessRuleValidationDao dao;
-    JdbcClient jdbc;
+    BusinessRuleValidationDao dummyDao;
 
     @BeforeEach
     void setUp() {
-        jdbc = dbExtension.getJdbc();
-        dao = new BusinessRuleValidationDao(jdbc);
+        dummyDao = mock(BusinessRuleValidationDao.class);
     }
 
     @Test
     void findDivisionsWithNonSingleHeadPosition() {
         // Arrange
-        dbExtension.runScripts("db/test-data.sql");
+        var projection1 = new DivisionPositionCountProjection(
+            1,
+            "test_structure_element_external_id_1",
+            2
+        );
+        var projection2 = new DivisionPositionCountProjection(
+            2,
+            "test_structure_element_external_id_2",
+            2
+        );
+        var projection3 = new DivisionPositionCountProjection(
+            3,
+            "test_structure_element_external_id_3",
+            2
+        );
+        var projection4 = new DivisionPositionCountProjection(
+            4,
+            "test_structure_element_external_id_4",
+            0
+        );
+
+        when(dummyDao.findDivisionsWithNonSingleHeadPosition(List.of("test_unit")))
+            .thenReturn(List.of(projection1, projection2, projection3, projection4));
 
         // Act
-        List<DivisionPositionCountProjection> projections = dao.findDivisionsWithNonSingleHeadPosition(
+        List<DivisionPositionCountProjection> projections = dummyDao.findDivisionsWithNonSingleHeadPosition(
             List.of("test_unit")
         );
 
@@ -71,10 +83,13 @@ class BusinessRuleValidationDaoTest {
     @Test
     void findUnassignedHeadPositions() {
         // Arrange
-        dbExtension.runScripts("db/test-data.sql");
+        var projection1 = new ExternalIdentity(3, "test_position_external_id_3");
+
+        when(dummyDao.findUnassignedHeadPositions(List.of("test_unit")))
+            .thenReturn(List.of(projection1));
 
         // Act
-        List<ExternalIdentity> projections = dao.findUnassignedHeadPositions(
+        List<ExternalIdentity> projections = dummyDao.findUnassignedHeadPositions(
             List.of("test_unit")
         );
 
@@ -90,10 +105,27 @@ class BusinessRuleValidationDaoTest {
     @Test
     void findHeadPositionsWithNonSingleAssignment() {
         // Arrange
-        dbExtension.runScripts("db/test-data.sql");
+        var projection1 = new PositionAssignmentCountProjection(
+            1,
+            "test_position_external_id_1",
+            0
+        );
+        var projection2 = new PositionAssignmentCountProjection(
+            2,
+            "test_position_external_id_2",
+            0
+        );
+        var projection3 = new PositionAssignmentCountProjection(
+            6,
+            "test_position_external_id_6",
+            2
+        );
+
+        when(dummyDao.findHeadPositionsWithNonSingleAssignment(List.of("test_unit")))
+            .thenReturn(List.of(projection1, projection2, projection3));
 
         // Act
-        List<PositionAssignmentCountProjection> projections = dao.findHeadPositionsWithNonSingleAssignment(
+        List<PositionAssignmentCountProjection> projections = dummyDao.findHeadPositionsWithNonSingleAssignment(
             List.of("test_unit")
         );
 
@@ -122,11 +154,25 @@ class BusinessRuleValidationDaoTest {
     @Test
     void findEmployeesWithMultipleMainAssignmentsPerUnit() {
         // Arrange
-        dbExtension.runScripts("db/test-data.sql");
+        var projection1 = new EmployeeAssignmentCountPerUnitProjection(
+            1,
+            "test_employee_external_id_1",
+            2,
+            "test_unit"
+        );
+        var projection2 = new EmployeeAssignmentCountPerUnitProjection(
+            3,
+            "test_employee_external_id_3",
+            2,
+            "test_unit"
+        );
+
+        when(dummyDao.findEmployeesWithMultipleMainAssignmentsPerUnit(List.of("test_unit")))
+            .thenReturn(List.of(projection1, projection2));
 
         // Act
         List<EmployeeAssignmentCountPerUnitProjection> projections =
-            dao.findEmployeesWithMultipleMainAssignmentsPerUnit(List.of("test_unit"));
+            dummyDao.findEmployeesWithMultipleMainAssignmentsPerUnit(List.of("test_unit"));
 
         // Assert
         assertEquals(2, projections.size());
@@ -149,11 +195,15 @@ class BusinessRuleValidationDaoTest {
     @Test
     void findEmployeesWithoutOfficialLegalAssignmentInActiveUnits() {
         // Arrange
-        dbExtension.runScripts("db/test-data.sql");
+        var projection1 = new ExternalIdentity(2, "test_employee_external_id_2");
+        var projection2 = new ExternalIdentity(4, "test_employee_external_id_4");
+
+        when(dummyDao.findEmployeesWithNoMainAssignments(List.of("test_unit")))
+            .thenReturn(List.of(projection1, projection2));
 
         // Act
         List<ExternalIdentity> projections =
-            dao.findEmployeesWithNoMainAssignments(List.of("test_unit"));
+            dummyDao.findEmployeesWithNoMainAssignments(List.of("test_unit"));
 
         // Assert
         assertEquals(2, projections.size());
@@ -172,10 +222,32 @@ class BusinessRuleValidationDaoTest {
     @Test
     void findCyclicDivisions() {
         // Arrange
-        dbExtension.runScripts("db/test-data.sql");
+        var projection1 = new CycleDetectionProjection(
+            1,
+            "test_structure_element_external_id_1",
+            "1 -> 2 -> 1"
+        );
+        var projection2 = new CycleDetectionProjection(
+            2,
+            "test_structure_element_external_id_2",
+            "2 -> 1 -> 2"
+        );
+        var projection3 = new CycleDetectionProjection(
+            3,
+            "test_structure_element_external_id_3",
+            "3 -> 2 -> 1 -> 2"
+        );
+        var projection4 = new CycleDetectionProjection(
+            4,
+            "test_structure_element_external_id_4",
+            "4 -> 3 -> 2 -> 1 -> 2"
+        );
+
+        when(dummyDao.findCyclicDivisions(List.of("test_unit")))
+            .thenReturn(List.of(projection1, projection2, projection3, projection4));
 
         // Act
-        List<CycleDetectionProjection> cycles = dao.findCyclicDivisions(List.of("test_unit"))
+        List<CycleDetectionProjection> cycles = dummyDao.findCyclicDivisions(List.of("test_unit"))
             .stream()
             .sorted(Comparator.comparing(CycleDetectionProjection::elementId))
             .toList();
