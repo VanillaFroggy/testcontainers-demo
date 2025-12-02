@@ -38,6 +38,7 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers-kafka'
     testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testImplementation 'io.lettuce:lettuce-core:6.3.2.RELEASE'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:6.1.0-M1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
