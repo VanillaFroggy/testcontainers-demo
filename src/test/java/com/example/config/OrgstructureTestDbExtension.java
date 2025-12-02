@@ -16,36 +16,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.sql.DataSource;
 
-@Testcontainers
-public class OrgstructureTestDbExtension implements Extension, BeforeEachCallback, BeforeAllCallback, AfterAllCallback {
-
-    @Container
-    public static final PostgreSQLContainer POSTGRES =
-        new PostgreSQLContainer("postgres:17.2")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test")
-            .withInitScript("db/init-schema.sql");
+public class OrgstructureTestDbExtension implements Extension, BeforeAllCallback, BeforeEachCallback {
 
     protected DataSource dataSource;
     protected JdbcClient jdbc;
 
     @Override
     public void beforeAll(ExtensionContext context) {
-        POSTGRES.start();
-
+        // Используем H2 в режиме совместимости с PostgreSQL
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(POSTGRES.getJdbcUrl());
-        config.setUsername(POSTGRES.getUsername());
-        config.setPassword(POSTGRES.getPassword());
+        config.setJdbcUrl("jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1");
+        config.setUsername("sa");
+        config.setPassword("");
 
         dataSource = new HikariDataSource(config);
         jdbc = JdbcClient.create(dataSource);
-    }
 
-    @Override
-    public void afterAll(ExtensionContext context) {
-        POSTGRES.stop();
+        runScripts("db/init-schema.sql");
     }
 
     @Override
@@ -54,7 +41,7 @@ public class OrgstructureTestDbExtension implements Extension, BeforeEachCallbac
     }
 
     /**
-     * Запускает скрипты из указанных SQL-файлов в БД контейнера
+     * Запускает скрипты из указанных SQL-файлов
      *
      * <p>Пути должны быть относительно <code>src/test/resources</code>
      */
