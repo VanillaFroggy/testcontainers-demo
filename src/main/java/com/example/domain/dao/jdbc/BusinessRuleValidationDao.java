@@ -5,6 +5,7 @@ import com.example.domain.dao.projection.DivisionPositionCountProjection;
 import com.example.domain.dao.projection.EmployeeAssignmentCountPerUnitProjection;
 import com.example.domain.dao.projection.ExternalIdentity;
 import com.example.domain.dao.projection.PositionAssignmentCountProjection;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -193,7 +194,7 @@ public class BusinessRuleValidationDao {
                     SELECT id AS start_id,
                            id,
                            parent_id,
-                           ARRAY[id] AS path,
+                           CAST(',' || id || ',' AS VARCHAR) AS path,
                            external_id
                     FROM structure_element
                     WHERE unit_code IN (:unit_codes)
@@ -204,20 +205,19 @@ public class BusinessRuleValidationDao {
                     SELECT w.start_id,
                            parent.id,
                            parent.parent_id,
-                           w.path || parent.id, -- добавляем текущий узел в путь
+                           w.path || parent.id || ',',
                            w.external_id
                     FROM walk w
-                             JOIN structure_element parent ON parent.id = w.parent_id
-                    -- идём только если ещё не встречали этот id в пути
-                    WHERE NOT parent.id = ANY(w.path)
+                        INNER JOIN structure_element parent ON parent.id = w.parent_id
+                    WHERE w.path NOT LIKE CONCAT('%,', parent.id, ',%')
                 )
-                -- Находим записи, где следующий parent_id уже есть в пути → цикл
-                SELECT DISTINCT w.start_id                                     AS start_id,
-                                external_id                                    AS start_external_id,
-                                ARRAY_TO_STRING(w.path || w.parent_id, ' -> ') AS cycle_path
+                SELECT DISTINCT w.start_id                                                        AS start_id,
+                                w.external_id                                                     AS start_external_id,
+                                -- Убираем ведущую и замыкающую запятую для красивого вывода
+                                SUBSTRING(w.path, 2, LENGTH(w.path) - 2) || ' -> ' || w.parent_id AS cycle_path
                 FROM walk w
                 WHERE w.parent_id IS NOT NULL
-                    AND w.parent_id = ANY(w.path);
+                    AND w.path LIKE CONCAT('%,', w.parent_id, ',%');
                 """)
             .param("unit_codes", unitCodes)
             .query((resultSet, rowNum) -> new CycleDetectionProjection(
