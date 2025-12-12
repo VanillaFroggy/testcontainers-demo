@@ -8,6 +8,6 @@ public class CustomRedisContainer extends GenericContainer<CustomRedisContainer>
     public CustomRedisContainer() {
         super("redis:7-alpine");
         withExposedPorts(6379);
-        waitingFor(Wait.forLogMessage("*Ready to accept connections.*", 1));
+        waitingFor(Wait.forLogMessage(".*Ready to accept connections.*", 1));
     }
 }
